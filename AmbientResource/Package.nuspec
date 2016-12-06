@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <title>Ambient Resource</title>
+    <id>Nicolai.Resources.AmbientResource</id>
+    <version>1.0.2</version>
+    <authors>Nicolai Henriksen</authors>
+    <owners>Nicolai Henriksen</owners>
+    <licenseUrl>https://opensource.org/licenses/MIT</licenseUrl>
+    <projectUrl>https://github.com/nicolaihenriksen/AmbientResource</projectUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>Very simple implementation of an ambient (disposable) resource</description>
+    <releaseNotes>Added github repo</releaseNotes>
+    <copyright>Copyright 2016</copyright>
+    <tags>Ambient, Resource</tags>
+  </metadata>
+  <files>
+    <file src="AmbientResource\bin\Release\Nicolai.Resources.AmbientResource.dll" target="lib\Nicolai.Resources.AmbientResource.dll" />
+  </files>
+</package>
