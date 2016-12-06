@@ -113,7 +113,6 @@ It is recommended to only use the ambient resource with a using block.
 AmbientResource.Current can be used outside of a using block, but it requires that it is stored in a reference variable and that it is explicitly disposed (i.e. refVar.Dispose()) when no longer needed.
 The generic ambient resource includes a timer mechanism which will Dispose() the resource if a timeout expires. The timer is reset every time a call to AmbientResource.Current is executed.
 The default timeout is 30 seconds (i.e. 30.000 milliseconds) but can be adjusted to your liking by setting the AmbientResource.ResourceTimeMillis.
-Licensing
 
 ##Feedback
 

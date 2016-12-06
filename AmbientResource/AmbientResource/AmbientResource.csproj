@@ -45,6 +45,9 @@
     <Compile Include="GenericAmbientResource.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\README.md">
+      <Link>README.md</Link>
+    </None>
     <None Include="..\Package.nuspec">
       <Link>Package.nuspec</Link>
     </None>
