@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
 using System.Timers;
 
 namespace Nicolai.Resources
@@ -11,8 +8,8 @@ namespace Nicolai.Resources
     {
         private static readonly object currentLock = new object();
         private static TSelf current;
-        private readonly Dictionary<string, int> referenceCounts = new Dictionary<string, int>();
 
+        public static int ActiveReferences { get; private set; }
         private readonly object referenceCountsLock = new object();
 
         protected TResource Resource;
@@ -36,7 +33,7 @@ namespace Nicolai.Resources
                             current = Activator.CreateInstance<TSelf>();
                             current.Resource = ResourceFactory();
                         }
-                        current.AddReferenceCount(GetCallerKey());
+                        current.AddReferenceCount();
                     }
                     return current;
                 }
@@ -47,69 +44,71 @@ namespace Nicolai.Resources
 
         public void Dispose()
         {
-            RemoveReferenceCount(GetCallerKey());
             lock (this.referenceCountsLock)
             {
-                if (this.referenceCounts.Count == 0)
+                if (RemoveReferenceCount() && current != null)
                 {
                     // Stop the timeout timer
                     this.timer?.Stop();
                     this.Resource.Dispose();
+                    this.Resource = default(TResource);
+                    current = null;
                 }
             }
         }
 
-        private void AddReferenceCount(string caller)
+        private void AddReferenceCount()
         {
             lock (this.referenceCountsLock)
             {
-                if (!this.referenceCounts.ContainsKey(caller))
-                {
-                    this.referenceCounts[caller] = 0;
-                }
-                this.referenceCounts[caller]++;
-            }
+                ActiveReferences++;
 
-            // Restart timer
-            this.timer?.Stop();
-            this.timer = new Timer {AutoReset = false, Interval = ResourceTimeoutMillis};
-            this.timer.Elapsed += TimeoutTimerElapsed;
-            this.timer.Start();
+                // Restart timer
+                this.timer?.Stop();
+                this.timer = new Timer { AutoReset = false, Interval = ResourceTimeoutMillis };
+                this.timer.Elapsed += TimeoutTimerElapsed;
+                this.timer.Start();
+            }
         }
 
         private void TimeoutTimerElapsed(object sender, ElapsedEventArgs e)
         {
             lock (this.referenceCountsLock)
             {
-                if (this.referenceCounts.Count > 0)
+                if (ActiveReferences > 0)
                 {
-                    this.referenceCounts.Clear();
-                    this.Resource.Dispose();
+                    ActiveReferences = 1;
+                    Dispose();
                 }
             }
         }
 
-        private void RemoveReferenceCount(string caller)
+        private bool RemoveReferenceCount()
         {
             lock (this.referenceCountsLock)
             {
-                if (this.referenceCounts.ContainsKey(caller))
+                if (ActiveReferences > 0)
                 {
-                    this.referenceCounts[caller]--;
+                    ActiveReferences--;
+                    return ActiveReferences == 0;
+                }
+                return false;
+            }
+        }
 
-                    if (this.referenceCounts[caller] == 0)
-                    {
-                        this.referenceCounts.Remove(caller);
-                    }
+        internal static void Reset()
+        {
+            if (current != null)
+            {
+                lock (current.referenceCountsLock)
+                {
+                    ActiveReferences = 0;
+                    current.timer?.Stop();
+                    current.Resource = default(TResource);
+                    current = null;
                 }
             }
         }
 
-        private static string GetCallerKey()
-        {
-            var stackTrace = new StackTrace();
-            var methodBase = stackTrace.GetFrame(2).GetMethod();
-            return methodBase.Name;
-        }
     }
 }

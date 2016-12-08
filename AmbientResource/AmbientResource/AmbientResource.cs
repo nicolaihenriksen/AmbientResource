@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Reflection;
 
 namespace Nicolai.Resources
 {
@@ -11,7 +8,7 @@ namespace Nicolai.Resources
         public static Func<IDisposable> ResourceFactory { get; set; }
 
         private static readonly object CurrentLock = new object();
-        private static AmbientResource _current;
+        private static AmbientResource current;
 
         public static AmbientResource Current
         {
@@ -21,67 +18,57 @@ namespace Nicolai.Resources
                 {
                     lock (CurrentLock)
                     {
-                        if (_current == null)
+                        if (current == null)
                         {
-                            _current = new AmbientResource { Resource = ResourceFactory() };
+                            current = new AmbientResource { Resource = ResourceFactory() };
                         }
+                        current.AddReferenceCount();
                     }
-
-                    _current.AddReferenceCount(GetCallerKey());
-                    return _current;
+                    return current;
                 }
-                throw new ArgumentNullException(nameof(ResourceFactory), nameof(ResourceFactory) + " must be initialized before calling " + nameof(Current));
+                throw new ArgumentNullException(nameof(ResourceFactory),
+                    nameof(ResourceFactory) + " must be initialized before calling " + nameof(Current));
             }
         }
 
-        private readonly object _referenceCountsLock = new object();
-        private readonly Dictionary<string, int> _referenceCounts = new Dictionary<string, int>();
+        public int ActiveReferences { get; private set; }
+        private readonly object referenceCountsLock = new object();
 
         protected IDisposable Resource;
 
         protected AmbientResource() { }
 
-        private void AddReferenceCount(string caller)
+        private void AddReferenceCount()
         {
-            lock (_referenceCountsLock)
+            lock (referenceCountsLock)
             {
-                if (!_referenceCounts.ContainsKey(caller))
-                {
-                    _referenceCounts[caller] = 0;
-                }
-                _referenceCounts[caller]++;
+                ActiveReferences++;
             }
         }
 
-        private void RemoveReferenceCount(string caller)
+        private bool RemoveReferenceCount()
         {
-            lock (_referenceCountsLock)
+            lock (this.referenceCountsLock)
             {
-                if (_referenceCounts.ContainsKey(caller))
+                if (ActiveReferences > 0)
                 {
-                    _referenceCounts[caller]--;
-
-                    if (_referenceCounts[caller] == 0)
-                    {
-                        _referenceCounts.Remove(caller);
-                    }
+                    ActiveReferences--;
+                    return ActiveReferences == 0;
                 }
+                return false;
             }
-        }
-
-        private static string GetCallerKey()
-        {
-            StackTrace stackTrace = new StackTrace();
-            MethodBase methodBase = stackTrace.GetFrame(2).GetMethod();
-            return methodBase.Name;
         }
 
         public void Dispose()
         {
-            RemoveReferenceCount(GetCallerKey());
-            if (_referenceCounts.Count == 0)
+            lock (this.referenceCountsLock)
             {
-                Resource.Dispose();
+                if (RemoveReferenceCount() && current != null)
+                {
+                    this.Resource.Dispose();
+                    this.Resource = null;
+                    current = null;
+                }
             }
         }
     }
