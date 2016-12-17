@@ -1,5 +1,6 @@
 ﻿using System;
-using System.Timers;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Nicolai.Resources
 {
@@ -14,11 +15,11 @@ namespace Nicolai.Resources
 
         protected TResource Resource;
 
-        private Timer timer;
+        private Timer timer = new Timer();
 
         public static Func<TResource> ResourceFactory { get; set; }
 
-        public static long ResourceTimeoutMillis { get; set; } = 30000;
+        public static int ResourceTimeoutMillis { get; set; } = 30000;
 
         public static TSelf Current
         {
@@ -32,6 +33,7 @@ namespace Nicolai.Resources
                         {
                             current = Activator.CreateInstance<TSelf>();
                             current.Resource = ResourceFactory();
+                            current.timer.TimerElapsed += current.TimeoutTimerElapsed;
                         }
                         current.AddReferenceCount();
                     }
@@ -65,13 +67,12 @@ namespace Nicolai.Resources
 
                 // Restart timer
                 this.timer?.Stop();
-                this.timer = new Timer { AutoReset = false, Interval = ResourceTimeoutMillis };
-                this.timer.Elapsed += TimeoutTimerElapsed;
+                this.timer.Delay = ResourceTimeoutMillis;
                 this.timer.Start();
             }
         }
 
-        private void TimeoutTimerElapsed(object sender, ElapsedEventArgs e)
+        private void TimeoutTimerElapsed()
         {
             lock (this.referenceCountsLock)
             {
@@ -111,4 +112,40 @@ namespace Nicolai.Resources
         }
 
     }
+
+    internal class Timer
+    {
+        internal event Action TimerElapsed = delegate() {};
+        internal int Delay { get; set; }
+        private CancellationTokenSource cancellationToken;
+        private bool started = false;        
+
+        public void Start()
+        {
+            if (started)
+                return;
+
+            started = true;
+            cancellationToken = new CancellationTokenSource();
+            Task.Run(() => RunAsync(), cancellationToken.Token);
+        }
+
+        public void Stop()
+        {
+            cancellationToken?.Cancel();
+            started = false;
+        }
+
+        private async Task RunAsync()
+        {
+            try
+            {
+                await Task.Delay(Delay);
+                TimerElapsed.Invoke();
+            }
+            catch (TaskCanceledException)
+            { }
+        }
+    }
+
 }

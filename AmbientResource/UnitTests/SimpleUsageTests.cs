@@ -113,7 +113,7 @@ namespace UnitTests
         }
 
         [TestMethod]
-        public void Reference_Timeout_Success()
+        public async Task Reference_Timeout_Success()
         {
             var timeout = MyAmbientResource.ResourceTimeoutMillis;
             try
@@ -125,9 +125,42 @@ namespace UnitTests
                 // Act
                 var res = MyAmbientResource.Current;
                 actualResource = res.ActualResource;
-                Task.Delay(600).Wait();
+                await Task.Delay(600);
 
                 // Assert
+                Assert.IsNotNull(actualResource);
+                Assert.AreEqual(1, actualResource.DisposeCount);
+                Assert.AreEqual(0, MyAmbientResource.ActiveReferences);
+            }
+            finally
+            {
+                MyAmbientResource.ResourceTimeoutMillis = timeout;
+            }
+        }
+
+        [TestMethod]
+        public async Task Reference_NotTimedOutAndThenTimeout_Success()
+        {
+            var timeout = MyAmbientResource.ResourceTimeoutMillis;
+            try
+            {
+                // Arrange
+                MyResource actualResource = null;
+                MyAmbientResource.ResourceTimeoutMillis = 500;
+
+                // Act
+                var res = MyAmbientResource.Current;
+                actualResource = res.ActualResource;
+                await Task.Delay(200);
+
+                // Assert (not timed out)
+                Assert.IsNotNull(actualResource);
+                Assert.AreEqual(0, actualResource.DisposeCount);
+                Assert.AreEqual(1, MyAmbientResource.ActiveReferences);
+
+                await Task.Delay(400);
+
+                // Assert (timed out)
                 Assert.IsNotNull(actualResource);
                 Assert.AreEqual(1, actualResource.DisposeCount);
                 Assert.AreEqual(0, MyAmbientResource.ActiveReferences);
