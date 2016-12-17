@@ -10,11 +10,11 @@
     <projectUrl>https://github.com/nicolaihenriksen/AmbientResource</projectUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <description>Very simple implementation of an ambient (disposable) resource</description>
-    <releaseNotes>Converted to PCL</releaseNotes>
+    <releaseNotes>Converted to .NET Standard 1.1</releaseNotes>
     <copyright>Copyright 2016</copyright>
     <tags>Ambient, Resource</tags>
   </metadata>
   <files>
-    <file src="AmbientResource\bin\Release\Nicolai.Resources.AmbientResource.dll" target="lib\Nicolai.Resources.AmbientResource.dll" />
+    <file src="AmbientResource\bin\Release\Nicolai.Resources.AmbientResource.dll" target="lib\netstandard1.1" />
   </files>
 </package>
