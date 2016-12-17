@@ -105,7 +105,7 @@ The utility is available as a NuGet package which can be installed from the Pack
 ```
 PM> Install-Package Nicolai.Resources.AmbientResource
 ```
-You can also find the package on nuget.org.
+You can also find the package on [nuget.org](https://www.nuget.org/packages/Nicolai.Resources.AmbientResource/).
 
 ##Important things to know
 
