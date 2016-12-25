@@ -140,8 +140,11 @@ namespace Nicolai.Resources
         {
             try
             {
-                await Task.Delay(Delay);
-                TimerElapsed.Invoke();
+                if (Delay > 0)
+                {
+                    await Task.Delay(Delay);
+                    TimerElapsed.Invoke();
+                }
             }
             catch (TaskCanceledException)
             { }
