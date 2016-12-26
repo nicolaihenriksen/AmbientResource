@@ -4,6 +4,11 @@ using System.Threading.Tasks;
 
 namespace Nicolai.Resources
 {
+    /// <summary>
+    /// Generic ambient resource class intended to be subclassed with an actual implementation
+    /// </summary>
+    /// <typeparam name="TSelf">The type of the class deriving from this base class</typeparam>
+    /// <typeparam name="TResource">The type of the resource which it can provide</typeparam>
     public abstract class GenericAmbientResource<TSelf, TResource> : IDisposable where TResource : IDisposable
         where TSelf : GenericAmbientResource<TSelf, TResource>
     {
@@ -19,8 +24,34 @@ namespace Nicolai.Resources
 
         public static Func<TResource> ResourceFactory { get; set; }
 
-        public static int ResourceTimeoutMillis { get; set; } = 30000;
+        private static int resouceTimeoutMillis = 30000;
 
+        /// <summary>
+        /// Timeout in milliseconds. If a resource has not been disposed after it will be
+        /// automatically disposed after this timeout. Set a value of 0 (or less) to disable.
+        /// </summary>
+        public static int ResourceTimeoutMillis
+        {
+            get
+            {
+                return resouceTimeoutMillis;
+            }
+            set
+            {
+                resouceTimeoutMillis = value;
+                lock (currentLock)
+                {
+                    if (current != null && current.timer != null)
+                    {
+                        current.timer.Delay = value;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// (Ambient) Reference to the current active instance of the resource
+        /// </summary>
         public static TSelf Current
         {
             get
@@ -44,6 +75,9 @@ namespace Nicolai.Resources
             }
         }
 
+        /// <summary>
+        /// Disposes the resource unless there are active references
+        /// </summary>
         public void Dispose()
         {
             lock (this.referenceCountsLock)
@@ -143,7 +177,8 @@ namespace Nicolai.Resources
                 if (Delay > 0)
                 {
                     await Task.Delay(Delay);
-                    TimerElapsed.Invoke();
+                    if (Delay > 0)
+                        TimerElapsed.Invoke();
                 }
             }
             catch (TaskCanceledException)
