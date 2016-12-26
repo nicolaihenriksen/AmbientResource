@@ -240,37 +240,6 @@ namespace UnitTests
         }
 
         [TestMethod]
-        public async Task Reference_TimeoutDisabledWhileActive_Success()
-        {
-            var timeout = MyAmbientResource.ResourceTimeoutMillis;
-            try
-            {
-                // Arrange
-                MyResource actualResource = null;
-                MyAmbientResource.ResourceTimeoutMillis = 200;
-
-                // Act
-                var res = MyAmbientResource.Current;
-                actualResource = res.ActualResource;
-                await Task.Delay(100);
-                MyAmbientResource.ResourceTimeoutMillis = 0;
-                await Task.Delay(200);
-
-                // Assert
-                Assert.IsNotNull(actualResource);
-                Assert.AreEqual(0, actualResource.DisposeCount);
-                Assert.AreEqual(1, MyAmbientResource.ActiveReferences);
-
-                // Cleanup
-                res.Dispose();
-            }
-            finally
-            {
-                MyAmbientResource.ResourceTimeoutMillis = timeout;
-            }
-        }
-
-        [TestMethod]
         public async Task Using_MultipleThreads_Success()
         {
             // Arrange
