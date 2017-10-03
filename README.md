@@ -5,7 +5,7 @@ There are many ways to solve this issue, (dependency) injection and ambience are
 
 The scenarios I most often encounter are request-scoped where one instance of the resource is required (i.e. instantiated) for each request. All subprocessing going on within that one request will all utilize the same resource. This is the basis for my **VERY** simple implementation of an ambient resource.
 
-The concept is fairly simple: A thread-safe (singleton) property, AmbientResource.Current ,represents the ambient resource and encapsulates instantiation of the ìactual resourceî by requiring the caller/user to specify a factory which will return an instance of the ìactual resourceî. This factory is used internally by the ambient resource to create a single instance of the ìactual resourceî which is used internally until the ambient resource is disposed.
+The concept is fairly simple: A thread-safe (singleton) property, AmbientResource.Current ,represents the ambient resource and encapsulates instantiation of the ‚Äúactual resource‚Äù by requiring the caller/user to specify a factory which will return an instance of the ‚Äúactual resource‚Äù. This factory is used internally by the ambient resource to create a single instance of the ‚Äúactual resource‚Äù which is used internally until the ambient resource is disposed.
 
 Consider the example below which is a perfect example of a signature being polluted with a parameter which in essence is irrelevant:
 ```cs
@@ -23,7 +23,7 @@ void Method2(SqlConnection conn)
     // ... Do some more stuff
 }
 ```
-Method1() is the entry method which fires up an SqlConnection instance. This instance is then passed along to Method2() which uses the connection to do some more work. The method signature for Method2() includes the connection only because we want to reuse the connection, not because it has any relevance to the task which the method performs. This is just a very simple case, and there might as well have been multiple nested method calls with most of the method signatures being polluted with ìunnessecaryî parameters. One can easily imagine that more than one resource is required and thus 2 (or more) resource parameters will be passed along to all nested method calls; Ugh! Another horrible side-effect of this approach is that once you along the way find out that you actually need to access Method2() as the entry method, you find yourself writing a ìdummyî method which simply instantiates the connection and passes it to the existing Method2(); or other equally undesirable work arounds.
+Method1() is the entry method which fires up an SqlConnection instance. This instance is then passed along to Method2() which uses the connection to do some more work. The method signature for Method2() includes the connection only because we want to reuse the connection, not because it has any relevance to the task which the method performs. This is just a very simple case, and there might as well have been multiple nested method calls with most of the method signatures being polluted with ‚Äúunnessecary‚Äù parameters. One can easily imagine that more than one resource is required and thus 2 (or more) resource parameters will be passed along to all nested method calls; Ugh! Another horrible side-effect of this approach is that once you along the way find out that you actually need to access Method2() as the entry method, you find yourself writing a ‚Äúdummy‚Äù method which simply instantiates the connection and passes it to the existing Method2(); or other equally undesirable work arounds.
 
 This is why I decided to roll my own ambient resource to make my code more readable. The above example can be transformed into the following using my ambient resource utility:
  ```cs
@@ -47,15 +47,15 @@ void Method2()
     }
 }
 ```
-This keeps the method signatures clean, and the ambient resource handles instantiating the resource and disposing it again when no longer used (i.e. exit from the ìouterî using block).
+This keeps the method signatures clean, and the ambient resource handles instantiating the resource and disposing it again when no longer used (i.e. exit from the ‚Äúouter‚Äù using block).
 
-##Ok, but how do I use a REAL resource?
+## Ok, but how do I use a REAL resource?
 
 Yeah ok, so the above example was mostly to provide a really short example which actually compiles and works. The problem is that AmbientResource class is very simple and simply encapsulates an instance of reference type IDisposable; thus not providing anything useful to the user. In effect the AmbientResource is mainly used as a proof-of-concept and should not be used for anything other than that.
 
 Therefore the utility also includes a generic ambient resource, *GenericAmbientResource*, which is **not** intended to be used directly (therefore abstract), but rather to be extended.
 
-So letís continue with the above example. For this scenario I would create my own ambient resource class representing the type of resource I want to expose to my application (i.e. an SqlConnection):
+So let‚Äôs continue with the above example. For this scenario I would create my own ambient resource class representing the type of resource I want to expose to my application (i.e. an SqlConnection):
 ```cs
 class DbConnectionAmbientResource : GenericAmbientResource<DbConnectionAmbientResource, SqlConnection>
 {
@@ -70,7 +70,7 @@ class DbConnectionAmbientResource : GenericAmbientResource<DbConnectionAmbientRe
     }
 }
 ```
-In such a class you have a choice of implementing ìwrapperî/îdelegationî methods (like I have done) to expose only the relevant methods of the ìactual resourceî (possibly with some additional around it), or to expose the ìactual resourceî itself via a property/method to provide the caller access to the real resource. I find the ìwrapper methodsî option to be most useful when refactoring existing code since you can then leave the existing code in place; it now just accesses the wrapper method on the ambient resource, rather than the actual method on the ìactual resourceî itself.
+In such a class you have a choice of implementing ‚Äúwrapper‚Äù/‚Äùdelegation‚Äù methods (like I have done) to expose only the relevant methods of the ‚Äúactual resource‚Äù (possibly with some additional around it), or to expose the ‚Äúactual resource‚Äù itself via a property/method to provide the caller access to the real resource. I find the ‚Äúwrapper methods‚Äù option to be most useful when refactoring existing code since you can then leave the existing code in place; it now just accesses the wrapper method on the ambient resource, rather than the actual method on the ‚Äúactual resource‚Äù itself.
 
 Using the class above, the example code can now be modified to:
 ```cs
@@ -98,7 +98,7 @@ void Method2()
 ```
 Now you are actually able to use the ambient resource for something useful (i.e. connect to a database).
 
-##Where can I get it?
+## Where can I get it?
 
 The utility is available as a NuGet package which can be installed from the Package Manager Console using the following command:
 
@@ -107,13 +107,13 @@ PM> Install-Package Nicolai.Resources.AmbientResource
 ```
 You can also find the package on [nuget.org](https://www.nuget.org/packages/Nicolai.Resources.AmbientResource/).
 
-##Important things to know
+## Important things to know
 
 It is recommended to only use the ambient resource with a using block.
 AmbientResource.Current can be used outside of a using block, but it requires that it is stored in a reference variable and that it is explicitly disposed (i.e. refVar.Dispose()) when no longer needed.
 The generic ambient resource includes a timer mechanism which will Dispose() the resource if a timeout expires. The timer is reset every time a call to AmbientResource.Current is executed.
 The default timeout is 30 seconds (i.e. 30.000 milliseconds) but can be adjusted to your liking by setting the AmbientResource.ResourceTimeMillis.
 
-##Feedback
+## Feedback
 
 If you have any questions, comments or requests regarding this simple utility, please feel free to comment on this post. I will get back to you as soon as possible.
