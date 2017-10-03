@@ -5,7 +5,7 @@ There are many ways to solve this issue, (dependency) injection and ambience are
 
 The scenarios I most often encounter are request-scoped where one instance of the resource is required (i.e. instantiated) for each request. All subprocessing going on within that one request will all utilize the same resource. This is the basis for my **VERY** simple implementation of an ambient resource.
 
-The concept is fairly simple: A thread-safe (singleton) property, AmbientResource.Current ,represents the ambient resource and encapsulates instantiation of the “actual resource” by requiring the caller/user to specify a factory which will return an instance of the “actual resource”. This factory is used internally by the ambient resource to create a single instance of the “actual resource” which is used internally until the ambient resource is disposed.
+The concept is fairly simple: A thread-safe (singleton) property, AmbientResource.Current, represents the ambient resource and encapsulates instantiation of the “actual resource” by requiring the caller/user to specify a factory which will return an instance of the “actual resource”. This factory is used internally by the ambient resource to create a single instance of the “actual resource” which is used internally until the ambient resource is disposed.
 
 Consider the example below which is a perfect example of a signature being polluted with a parameter which in essence is irrelevant:
 ```cs
@@ -112,7 +112,7 @@ You can also find the package on [nuget.org](https://www.nuget.org/packages/Nico
 It is recommended to only use the ambient resource with a using block.
 AmbientResource.Current can be used outside of a using block, but it requires that it is stored in a reference variable and that it is explicitly disposed (i.e. refVar.Dispose()) when no longer needed.
 The generic ambient resource includes a timer mechanism which will Dispose() the resource if a timeout expires. The timer is reset every time a call to AmbientResource.Current is executed.
-The default timeout is 30 seconds (i.e. 30.000 milliseconds) but can be adjusted to your liking by setting the AmbientResource.ResourceTimeMillis.
+The default timeout is 30 seconds (i.e. 30.000 milliseconds) but can be adjusted to your liking by setting the AmbientResource.ResourceTimeoutMillis.
 
 ## Feedback
 
